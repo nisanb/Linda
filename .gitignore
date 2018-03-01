@@ -3,3 +3,4 @@ src/qt/locale/*.qm
 src/obj/
 Linda-qt
 src/Lindad
+.settings/
