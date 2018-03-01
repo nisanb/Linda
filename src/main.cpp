@@ -43,7 +43,7 @@ CBigNum bnProofOfStakeLimit(~uint256(0) >> 20);
 CBigNum bnProofOfStakeLimitV2(~uint256(0) >> 48);
 CBigNum bnProofOfStakeLimitV2fork(~uint256(0) >> 32);
 
-unsigned int nStakeMinAge = 24 * 60 * 60; // 8 hours
+unsigned int nStakeMinAge = 24 * 60 * 60; // 24 hours
 unsigned int nModifierInterval = 10 * 60; // time to elapse before new modifier is computed
 
 int nCoinbaseMaturity = 10;
@@ -2201,10 +2201,12 @@ bool CTransaction::GetCoinAge(CTxDB& txdb, uint64_t& nCoinAge) const
 
     if (IsCoinBase())
         return true;
-
+    cout << "--------CoinAge Request----------" <<endl;
+    cout << "--------Going through transactions----------" <<endl;
     BOOST_FOREACH(const CTxIn& txin, vin)
     {
         // First try finding the previous transaction in database
+    	cout << "Looking at transaction " << txin.ToString() << endl;
         CTransaction txPrev;
         CTxIndex txindex;
         if (!txPrev.ReadFromDisk(txdb, txin.prevout, txindex))
@@ -2218,14 +2220,17 @@ bool CTransaction::GetCoinAge(CTxDB& txdb, uint64_t& nCoinAge) const
             return false; // unable to read block of previous transaction
         if (block.GetBlockTime() + nStakeMinAge > nTime)
             continue; // only count coins meeting min age requirement
-
         int64_t nValueIn = txPrev.vout[txin.prevout.n].nValue;
+        cout << "nValueIn - " << nValueIn/COIN << endl;
+        cout << "Age in seconds: " << (nTime-txPrev.nTime) << endl;
         bnCentSecond += CBigNum(nValueIn) * (nTime-txPrev.nTime) / CENT;
-
+        cout << "bnCentSecond: " << bnCentSecond/COIN << endl;
         LogPrint("coinage", "coin age nValueIn=%d nTimeDiff=%d bnCentSecond=%s\n", nValueIn, nTime - txPrev.nTime, bnCentSecond.ToString());
     }
 
     CBigNum bnCoinDay = bnCentSecond * CENT / COIN / (24 * 60 * 60);
+    cout << "---------------------------------" << endl;
+    cout << "bnCoinAge = " << bnCoinDay/COIN << endl;
     LogPrint("coinage", "coin age bnCoinDay=%s\n", bnCoinDay.ToString());
     nCoinAge = bnCoinDay.getuint64();
     return true;

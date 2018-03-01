@@ -76,6 +76,69 @@ Value getstakesubsidy(const Array& params, bool fHelp)
     return (uint64_t)GetProofOfStakeReward(nCoinAge, 0, pindexBest->nHeight);
 }
 
+Value getStakeRewardByCoins(const Array& params, bool fHelp)
+{
+
+	cout << "Trying " <<endl;
+	 if (fHelp || params.size() != 3)
+	        throw runtime_error(
+	            "getStakeRewardByCoins <coins> <days> <percent>\n"
+	            "Returns prize for the coins amount");
+	 RPCTypeCheck(params, list_of(int_type)(int_type));
+	 int nCoins = params[0].get_int();
+	 int nDays = params[1].get_int();
+	 int nPercentPerYear = params[2].get_int() * CENT;
+	 cout << "Received nCoins(Linda): " << nCoins << " nDays " << nDays << endl;
+	 uint64_t nTotalSeconds = nDays * 24 * 60 * 60;
+	 cout << "Total seconds for coins: " << nTotalSeconds <<endl;;
+	 CBigNum totalCoins = nCoins * COIN;
+	 cout << "Total coins: " << totalCoins << endl;
+	 CBigNum bnCentSecond = totalCoins * nTotalSeconds / CENT;
+	 cout << "bnCentSecond: " << bnCentSecond << endl;
+
+	 CBigNum bnCoinsDay = bnCentSecond * CENT / (COIN * 24 * 60 * 60);
+
+	 cout << "bnCoinsDay = " << bnCoinsDay << endl;
+
+
+
+	 CBigNum nSubsidy = (bnCoinsDay * nPercentPerYear * 33 / (365 * 33 + 8)) / COIN;
+
+	 return nSubsidy.getuint64();
+
+
+
+
+
+}
+
+Value getCoinAge(const Array& params, bool fHelp)
+{
+	 if (fHelp || params.size() != 1)
+	        throw runtime_error(
+	            "getcoinage <hex string>\n"
+	            "Returns coins age of a txid (hash)");
+
+	    RPCTypeCheck(params, list_of(str_type));
+
+	    vector<unsigned char> txData(ParseHex(params[0].get_str()));
+	    CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
+	    CTransaction tx;
+	    try {
+	        ssData >> tx;
+	    }
+	    catch (std::exception &e) {
+	        throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
+	    }
+
+	    uint64_t nCoinAge;
+	    CTxDB txdb("r");
+	    if (!tx.GetCoinAge(txdb, nCoinAge))
+	        throw JSONRPCError(RPC_MISC_ERROR, "GetCoinAge failed");
+
+	    return nCoinAge;
+}
+
 Value getmininginfo(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
